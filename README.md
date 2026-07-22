@@ -1,4 +1,8 @@
-# MicPause
+<p align="center">
+  <img src="docs/icon.png" width="128" alt="MicPause icon">
+</p>
+
+<h1 align="center">MicPause</h1>
 
 A macOS menu bar utility that automatically pauses your music when any app
 starts using the microphone, and resumes it when the mic is free again. Join a
