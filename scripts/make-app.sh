@@ -24,6 +24,10 @@ fi
 # signature verification.
 xattr -cr "$APP"
 codesign --force --sign "$IDENTITY" --identifier com.ruan.MicPause "$APP"
+# iCloud Desktop sync may stamp Finder/file-provider attributes back onto the
+# bundle root; they are harmless to the signature but fail --strict verification.
+xattr -d com.apple.FinderInfo "$APP" 2>/dev/null || true
+xattr -d 'com.apple.fileprovider.fpfs#P' "$APP" 2>/dev/null || true
 echo "Signed with: $IDENTITY"
 
 echo
