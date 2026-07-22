@@ -12,9 +12,19 @@ cp .build/release/MicPause "$APP/Contents/MacOS/MicPause"
 cp Support/Info.plist "$APP/Contents/Info.plist"
 cp Support/AppIcon.icns "$APP/Contents/Resources/AppIcon.icns"
 
-# Ad-hoc signature with a stable identifier so TCC permission grants
-# (Accessibility, Automation) survive rebuilds.
-codesign --force --sign - --identifier com.ruan.MicPause "$APP"
+# Prefer the local "MicPause Dev Signing" self-signed certificate: it keeps the
+# signature stable across rebuilds, so TCC permission grants (Accessibility,
+# Automation) survive. Falls back to ad-hoc (e.g. in CI, where no cert exists);
+# ad-hoc signatures change every build and grants must be re-approved.
+IDENTITY="-"
+if security find-identity -p codesigning -v 2>/dev/null | grep -q "MicPause Dev Signing"; then
+    IDENTITY="MicPause Dev Signing"
+fi
+# Strip extended attributes (Finder info, provenance) — they break strict
+# signature verification.
+xattr -cr "$APP"
+codesign --force --sign "$IDENTITY" --identifier com.ruan.MicPause "$APP"
+echo "Signed with: $IDENTITY"
 
 echo
 echo "Built $APP"
