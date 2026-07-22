@@ -168,36 +168,26 @@ final class AppDelegate: NSObject, NSApplicationDelegate, MicMonitorDelegate {
         autoResumeItem.state = isAutoResumeEnabled ? .on : .off
         launchAtLoginItem.state = SMAppService.mainApp.status == .enabled ? .on : .off
 
+        let symbolNames: [String]
         if paused != nil {
-            statusItem.button?.image = pausedIcon()
+            symbolNames = ["mic.badge.pause", "mic.slash.fill"]
+        } else if micActive {
+            symbolNames = ["mic.fill"]
         } else {
-            statusItem.button?.image = templateSymbol(micActive ? "mic.fill" : "mic")
+            symbolNames = ["mic"]
         }
+        statusItem.button?.image = firstAvailableSymbol(symbolNames)
         statusItem.button?.appearsDisabled = !isEnabled
     }
 
-    private static let symbolConfig = NSImage.SymbolConfiguration(pointSize: 16, weight: .medium)
-
-    private func templateSymbol(_ name: String) -> NSImage? {
-        let image = NSImage(systemSymbolName: name, accessibilityDescription: "MicPause")?
-            .withSymbolConfiguration(Self.symbolConfig)
-        image?.isTemplate = true
-        return image
-    }
-
-    /// Orange pause symbol — deliberately different in shape and color from the mic
-    /// glyphs, so "MicPause paused your music" is unmistakable at a glance.
-    private func pausedIcon() -> NSImage? {
-        let config = Self.symbolConfig
-            .applying(NSImage.SymbolConfiguration(paletteColors: [.systemOrange]))
-        guard let image = NSImage(
-            systemSymbolName: "pause.circle.fill",
-            accessibilityDescription: "MicPause paused playback"
-        )?.withSymbolConfiguration(config) else {
-            return templateSymbol("mic.slash.fill")
+    private func firstAvailableSymbol(_ names: [String]) -> NSImage? {
+        for name in names {
+            if let image = NSImage(systemSymbolName: name, accessibilityDescription: "MicPause") {
+                image.isTemplate = true
+                return image
+            }
         }
-        image.isTemplate = false
-        return image
+        return nil
     }
 
     // MARK: - Permissions
