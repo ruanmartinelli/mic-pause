@@ -99,6 +99,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, MicMonitorDelegate {
 
         menu.addItem(.separator())
 
+        let grantItem = NSMenuItem(title: "Grant Permissions…",
+                                   action: #selector(grantPermissions), keyEquivalent: "")
+        grantItem.target = self
+        menu.addItem(grantItem)
+
+        menu.addItem(.separator())
+
         let quitItem = NSMenuItem(title: "Quit MicPause", action: #selector(quit), keyEquivalent: "q")
         quitItem.target = self
         menu.addItem(quitItem)
@@ -135,6 +142,28 @@ final class AppDelegate: NSObject, NSApplicationDelegate, MicMonitorDelegate {
                 + "to use Launch at Login.\n\n\(error.localizedDescription)"
             alert.runModal()
         }
+        updateUI()
+    }
+
+    @objc private func grantPermissions() {
+        NSApp.activate(ignoringOtherApps: true)
+        let status = playback.requestPermissions()
+
+        let alert = NSAlert()
+        if status.promptableRunningPlayers.isEmpty {
+            alert.messageText = "Open Spotify or Music first"
+            alert.informativeText = "To grant permission to pause them, launch Spotify or Apple Music, "
+                + "then choose “Grant Permissions…” again. macOS only shows the “control” prompt while "
+                + "the player is running.\n\nIf an Accessibility prompt appeared, approve that now to allow "
+                + "pausing browsers and other players."
+        } else {
+            let names = status.promptableRunningPlayers.map(\.displayName).joined(separator: " and ")
+            alert.messageText = "Approve the permission prompts"
+            alert.informativeText = "macOS should be asking to let MicPause control \(names). Click OK on "
+                + "each prompt.\n\nIf an Accessibility prompt also appeared, approve it to allow pausing "
+                + "browsers and other players. You only need to do this once."
+        }
+        alert.runModal()
         updateUI()
     }
 

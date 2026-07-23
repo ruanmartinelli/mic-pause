@@ -125,6 +125,36 @@ public final class PlaybackController {
         return AXIsProcessTrustedWithOptions(options)
     }
 
+    public struct PermissionStatus {
+        public let accessibilityGranted: Bool
+        /// Scriptable players (Spotify/Music) that are running and thus can be
+        /// prompted for Automation right now.
+        public let promptableRunningPlayers: [Source]
+    }
+
+    /// Proactively triggers the permission prompts so the user doesn't have to wait
+    /// for a real mic event: the Accessibility prompt, plus the per-app Automation
+    /// prompt for each of Spotify/Music that is currently running. A benign
+    /// `player state` query is enough to make macOS raise the Automation dialog.
+    /// Returns which prompts could be fired. Call on the main queue.
+    @discardableResult
+    public func requestPermissions() -> PermissionStatus {
+        let accessibility = ensureAccessibilityPermission(prompt: true)
+
+        var promptable: [Source] = []
+        for source in [Source.spotify, .music] {
+            guard !NSRunningApplication
+                .runningApplications(withBundleIdentifier: bundleID(for: source)).isEmpty else { continue }
+            // Sending this AppleEvent raises the "MicPause wants to control X" dialog
+            // if it hasn't been answered yet; harmless if already granted.
+            runAppleScript("tell application \"\(appName(for: source))\" to player state")
+            promptable.append(source)
+            logger.info("Requested Automation for \(source.displayName, privacy: .public)")
+        }
+
+        return PermissionStatus(accessibilityGranted: accessibility, promptableRunningPlayers: promptable)
+    }
+
     // MARK: - Scriptable players (AppleScript)
 
     private func appName(for source: Source) -> String {
